@@ -21,36 +21,12 @@ To perform a test installation, run the following command:
 curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh --test
 ```
 
-### Update
-
-To update the SSL setup script to the latest version, run the following command:
-
-```sh
-curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh update
-```
-
 ### Uninstallation
 
 To uninstall the SSL setup, run the following command:
 
 ```sh
 curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh uninstall
-```
-
-### Multiple Parameters
-
-You can pass multiple parameters to the script at once. For example, to update and then perform a test installation, run:
-
-```sh
-curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh update --test
-```
-
-### Dry-Run Mode
-
-To see the commands that would be executed without actually running them, use the `-d` or `--dry-run` flag:
-
-```sh
-curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh --dry-run
 ```
 
 ## Supported DNS Services

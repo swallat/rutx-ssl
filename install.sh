@@ -60,7 +60,6 @@ fi
 # Uninstall option
 if [ "$ACTION" = "uninstall" ]; then
   echo "Uninstalling SSL setup..."
-  execute "sed -i '/\/root\/ssl.sh/d' /etc/rc.local"
   execute "rm -f /root/ssl.sh"
   execute "sed -i '/export HETZNER_Token/d' /root/.profile"
   execute "sed -i '/export CF_Token/d' /root/.profile"
@@ -152,45 +151,26 @@ EOF"
   execute "chmod a+x ./ssl.sh"
 
   if [ "$TEST_INSTALL" != "yes" ]; then
-    # Update rc.local
-    echo "Updating rc.local..."
-    if ! grep -q '/root/ssl.sh' /etc/rc.local; then
-      if [ "$SERVICE" = "dns_hetzner" ]; then
-        execute "sed -i '/^exit 0/i export HETZNER_Token=\"$HETZNER_Token\"\n/root/ssl.sh >/dev/null 2>&1 &' /etc/rc.local"
-      elif [ "$SERVICE" = "dns_cf" ]; then
-        execute "sed -i '/^exit 0/i export CF_Token=\"$CF_Token\"\nexport CF_Account_ID=\"$CF_Account_ID\"\n/root/ssl.sh >/dev/null 2>&1 &' /etc/rc.local"
-      fi
-    fi
-
-    # Update .profile
-    echo "Updating .profile..."
-    if [ ! -f /root/.profile ]; then
-      execute "touch /root/.profile"
-    fi
-
-    # Add HETZNER_Token if Hetzner is selected
+    # Add environment variables to profile for persistent access
+    echo "Adding environment variables to .profile..."
     if [ "$SERVICE" = "dns_hetzner" ]; then
-      if ! grep -q '^export HETZNER_Token=' /root/.profile; then
-        execute "echo \"export HETZNER_Token=\\\"$HETZNER_Token\\\"\" >> /root/.profile"
-      else
-        execute "sed -i \"s|^export HETZNER_Token=.*|export HETZNER_Token=\\\"$HETZNER_Token\\\"|\" /root/.profile"
-      fi
+      execute "grep -q 'HETZNER_Token' /root/.profile || echo 'export HETZNER_Token=\"$HETZNER_Token\"' >> /root/.profile"
+    else
+      execute "grep -q 'CF_Token' /root/.profile || echo 'export CF_Token=\"$CF_Token\"' >> /root/.profile"
+      execute "grep -q 'CF_Account_ID' /root/.profile || echo 'export CF_Account_ID=\"$CF_Account_ID\"' >> /root/.profile"
     fi
 
-    # Add CF_Token and CF_Account_ID if Cloudflare is selected
-    if [ "$SERVICE" = "dns_cf" ]; then
-      if ! grep -q '^export CF_Token=' /root/.profile; then
-        execute "echo \"export CF_Token=\\\"$CF_Token\\\"\" >> /root/.profile"
-      else
-        execute "sed -i \"s|^export CF_Token=.*|export CF_Token=\\\"$CF_Token\\\"|\" /root/.profile"
-      fi
-      if ! grep -q '^export CF_Account_ID=' /root/.profile; then
-        execute "echo \"export CF_Account_ID=\\\"$CF_Account_ID\\\"\" >> /root/.profile"
-      else
-        execute "sed -i \"s|^export CF_Account_ID=.*|export CF_Account_ID=\\\"$CF_Account_ID\\\"|\" /root/.profile"
-      fi
-    fi
+    # Copy SSL script to root directory
+    echo "Copying SSL script to /root/..."
+    execute "cp ./ssl.sh /root/ssl.sh"
+
+    # Execute the script for immediate certificate generation
+    echo "Executing SSL script..."
+    execute "/root/ssl.sh"
+  else
+    echo "Test installation completed. Use --dry-run to see what commands would be executed."
   fi
 
-  echo "Installation completed."
+  echo "Installation completed successfully."
+  exit 0
 fi

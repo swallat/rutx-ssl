@@ -39,7 +39,7 @@ execute() {
   if [ "$DRY_RUN" = "yes" ]; then
     echo "DRY-RUN: $*"
   else
-    eval "$@"
+    "$@"
   fi
 }
 
@@ -136,7 +136,7 @@ CA=\"$CA\"
 # Export environment variables
 export HETZNER_Token=\"$HETZNER_Token\"
 export CF_Token=\"$CF_Token\"
-export CF_Account_ID=\"$CF_ACCOUNT_ID\"
+export CF_Account_ID=\"$CF_Account_ID\"
 
 # Install ACME client if not already installed
 if [ ! -f /root/.acme.sh/acme.sh ]; then
@@ -158,7 +158,7 @@ EOF"
       if [ "$SERVICE" = "dns_hetzner" ]; then
         execute "sed -i '/^exit 0/i export HETZNER_Token=\"$HETZNER_Token\"\n/root/ssl.sh >/dev/null 2>&1 &' /etc/rc.local"
       elif [ "$SERVICE" = "dns_cf" ]; then
-        execute "sed -i '/^exit 0/i export CF_Token=\"$CF_Token\"\nexport CF_Account_ID=\"$CF_ACCOUNT_ID\"\n/root/ssl.sh >/dev/null 2>&1 &' /etc/rc.local"
+        execute "sed -i '/^exit 0/i export CF_Token=\"$CF_Token\"\nexport CF_Account_ID=\"$CF_Account_ID\"\n/root/ssl.sh >/dev/null 2>&1 &' /etc/rc.local"
       fi
     fi
 
@@ -185,9 +185,9 @@ EOF"
         execute "sed -i \"s|^export CF_Token=.*|export CF_Token=\\\"$CF_Token\\\"|\" /root/.profile"
       fi
       if ! grep -q '^export CF_Account_ID=' /root/.profile; then
-        execute "echo \"export CF_Account_ID=\\\"$CF_ACCOUNT_ID\\\"\" >> /root/.profile"
+        execute "echo \"export CF_Account_ID=\\\"$CF_Account_ID\\\"\" >> /root/.profile"
       else
-        execute "sed -i \"s|^export CF_Account_ID=.*|export CF_Account_ID=\\\"$CF_ACCOUNT_ID\\\"|\" /root/.profile"
+        execute "sed -i \"s|^export CF_Account_ID=.*|export CF_Account_ID=\\\"$CF_Account_ID\\\"|\" /root/.profile"
       fi
     fi
   fi

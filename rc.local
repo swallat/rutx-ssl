@@ -48,9 +48,12 @@ SERVICE_TOKEN="HETZNER_Token"
 CA="letsencrypt"
 
 # Export environment variables
-export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
-export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"
-export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
+if [ "\$SERVICE" = "dns_hetzner" ]; then
+  export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
+elif [ "\$SERVICE" = "dns_cf" ]; then
+  export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"
+  export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
+fi
 
 # Install ACME client if not already installed
 if [ ! -f /root/.acme.sh/acme.sh ]; then
@@ -67,9 +70,12 @@ EOF
 fi
 
 # Export environment variables
-export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
-export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"
-export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
+if [ "$SERVICE" = "dns_hetzner" ]; then
+  export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
+elif [ "$SERVICE" = "dns_cf" ]; then
+  export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"
+  export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
+fi
 
 # Run SSL script in the background safely
 echo "Running ssl.sh script in the background..."

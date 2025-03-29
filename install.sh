@@ -111,13 +111,16 @@ if [ "$ACTION" = "install" ]; then
       ;;
   esac
 
+  # Format domains correctly for acme.sh
+  FORMATTED_DOMAINS=$(echo "$DOMAINS" | tr ',' ' ' | sed 's/[^ ]* */-d & /g')
+
   # SSL script creation
   echo "Creating ssl.sh script..."
   execute "cat > ./ssl.sh << 'EOF'
 #!/bin/sh
 
 # Domains and email configuration
-DOMAINS=\"$DOMAINS\"
+DOMAINS=\"$FORMATTED_DOMAINS\"
 MAIL=\"$MAIL\"
 
 # DNS service for ACME
@@ -131,17 +134,14 @@ fi
 CA=\"$CA\"
 
 # Export environment variables
-export HETZNER_Token=\"$HETZNER_TOKEN\"
-export CF_Token=\"$CF_TOKEN\"
+export HETZNER_Token=\"$HETZNER_Token\"
+export CF_Token=\"$CF_Token\"
 export CF_Account_ID=\"$CF_ACCOUNT_ID\"
 
 # Install ACME client if not already installed
 if [ ! -f /root/.acme.sh/acme.sh ]; then
   curl -s https://get.acme.sh | sh -s email=\$MAIL
 fi
-
-# Format domains correctly for acme.sh
-DOMAINS=\"\$(echo \$DOMAINS | tr ',' ' ' | sed 's/[^ ]* */-d & /g')\"
 
 # Request and import certificates
 /root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$DOMAINS \\
@@ -156,9 +156,9 @@ EOF"
     echo "Updating rc.local..."
     if ! grep -q '/root/ssl.sh' /etc/rc.local; then
       if [ "$SERVICE" = "dns_hetzner" ]; then
-        execute "sed -i '/^exit 0/i export HETZNER_Token=\"$HETZNER_TOKEN\"\n/root/ssl.sh >/dev/null 2>&1 &' /etc/rc.local"
+        execute "sed -i '/^exit 0/i export HETZNER_Token=\"$HETZNER_Token\"\n/root/ssl.sh >/dev/null 2>&1 &' /etc/rc.local"
       elif [ "$SERVICE" = "dns_cf" ]; then
-        execute "sed -i '/^exit 0/i export CF_Token=\"$CF_TOKEN\"\nexport CF_Account_ID=\"$CF_ACCOUNT_ID\"\n/root/ssl.sh >/dev/null 2>&1 &' /etc/rc.local"
+        execute "sed -i '/^exit 0/i export CF_Token=\"$CF_Token\"\nexport CF_Account_ID=\"$CF_ACCOUNT_ID\"\n/root/ssl.sh >/dev/null 2>&1 &' /etc/rc.local"
       fi
     fi
 
@@ -171,18 +171,18 @@ EOF"
     # Add HETZNER_Token if Hetzner is selected
     if [ "$SERVICE" = "dns_hetzner" ]; then
       if ! grep -q '^export HETZNER_Token=' /root/.profile; then
-        execute "echo \"export HETZNER_Token=\\\"$HETZNER_TOKEN\\\"\" >> /root/.profile"
+        execute "echo \"export HETZNER_Token=\\\"$HETZNER_Token\\\"\" >> /root/.profile"
       else
-        execute "sed -i \"s|^export HETZNER_Token=.*|export HETZNER_Token=\\\"$HETZNER_TOKEN\\\"|\" /root/.profile"
+        execute "sed -i \"s|^export HETZNER_Token=.*|export HETZNER_Token=\\\"$HETZNER_Token\\\"|\" /root/.profile"
       fi
     fi
 
     # Add CF_Token and CF_Account_ID if Cloudflare is selected
     if [ "$SERVICE" = "dns_cf" ]; then
       if ! grep -q '^export CF_Token=' /root/.profile; then
-        execute "echo \"export CF_Token=\\\"$CF_TOKEN\\\"\" >> /root/.profile"
+        execute "echo \"export CF_Token=\\\"$CF_Token\\\"\" >> /root/.profile"
       else
-        execute "sed -i \"s|^export CF_Token=.*|export CF_Token=\\\"$CF_TOKEN\\\"|\" /root/.profile"
+        execute "sed -i \"s|^export CF_Token=.*|export CF_Token=\\\"$CF_Token\\\"|\" /root/.profile"
       fi
       if ! grep -q '^export CF_Account_ID=' /root/.profile; then
         execute "echo \"export CF_Account_ID=\\\"$CF_ACCOUNT_ID\\\"\" >> /root/.profile"

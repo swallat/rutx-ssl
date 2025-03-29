@@ -8,7 +8,6 @@ if [ "$1" = "uninstall" ]; then
   sed -i '/export HETZNER_Token/d' /root/.profile
   sed -i '/export CF_Token/d' /root/.profile
   sed -i '/export CF_Account_ID/d' /root/.profile
-  sed -i '/export CF_API_EMAIL/d' /root/.profile
   echo "Uninstallation completed."
   exit 0
 fi
@@ -42,8 +41,6 @@ case $opt in
     read -r CF_TOKEN
     echo "Please enter your Cloudflare_Account_ID:"
     read -r CF_ACCOUNT_ID
-    echo "Please enter your Cloudflare_API_Email:"
-    read -r CF_API_EMAIL
     ;;
   *)
     echo "Invalid option $opt"
@@ -65,7 +62,7 @@ MAIL="$MAIL"
 SERVICE="$SERVICE"
 SERVICE_TOKEN="HETZNER_Token"
 if [ "\$SERVICE" = "dns_cf" ]; then
-  SERVICE_TOKEN="CF_DNS_API_TOKEN"
+  SERVICE_TOKEN="CF_Token"
 fi
 
 # Certificate authority
@@ -73,8 +70,7 @@ CA="$CA"
 
 # Export environment variables
 export HETZNER_Token="$HETZNER_TOKEN"
-export CF_API_EMAIL="$CF_API_EMAIL"
-export CF_DNS_API_TOKEN="$CF_TOKEN"
+export CF_Token="$CF_TOKEN"
 export CF_Account_ID="$CF_ACCOUNT_ID"
 
 # Install ACME client if not already installed
@@ -82,8 +78,11 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
   curl -s https://get.acme.sh | sh -s email=\$MAIL
 fi
 
+# Format domains correctly
+DOMAINS=\$(echo \$DOMAINS | sed 's/[^ ]* */-d &/g')
+
 # Request and import certificates
-/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$(echo \$DOMAINS | sed 's/[^ ]* */-d &/g') \
+/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$DOMAINS \
   --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \
   --reloadcmd "/etc/init.d/uhttpd restart" --log
 EOF
@@ -112,7 +111,7 @@ if [ "$TEST_INSTALL" != "yes" ]; then
     fi
   fi
 
-  # Add CF_Token, CF_Account_ID, and CF_API_EMAIL if Cloudflare is selected
+  # Add CF_Token and CF_Account_ID if Cloudflare is selected
   if [ "$SERVICE" = "dns_cf" ]; then
     if ! grep -q '^export CF_Token=' /root/.profile; then
       echo "Adding CF_Token to .profile..."
@@ -121,10 +120,6 @@ if [ "$TEST_INSTALL" != "yes" ]; then
     if ! grep -q '^export CF_Account_ID=' /root/.profile; then
       echo "Adding CF_Account_ID to .profile..."
       echo "export CF_Account_ID=\"$CF_ACCOUNT_ID\"" >> /root/.profile
-    fi
-    if ! grep -q '^export CF_API_EMAIL=' /root/.profile; then
-      echo "Adding CF_API_EMAIL to .profile..."
-      echo "export CF_API_EMAIL=\"$CF_API_EMAIL\"" >> /root/.profile
     fi
   fi
 fi

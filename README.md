@@ -46,4 +46,3 @@ curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/he
 - **Support for wildcard domains**.
 - **Added support for Cloudflare Account ID**.
 - **Added uninstall option**.
-

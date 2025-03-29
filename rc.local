@@ -16,15 +16,11 @@ if [ "$SERVICE" = "dns_hetzner" ]; then
   fi
 fi
 
-# Add CF_API_EMAIL, CF_DNS_API_TOKEN, and CF_Account_ID if Cloudflare is selected
+# Add CF_Token and CF_Account_ID if Cloudflare is selected
 if [ "$SERVICE" = "dns_cf" ]; then
-  if ! grep -q '^export CF_API_EMAIL=' /root/.profile; then
-    echo "Adding CF_API_EMAIL to .profile..."
-    echo 'export CF_API_EMAIL="YOUR_CLOUDFLARE_EMAIL"' >> /root/.profile
-  fi
-  if ! grep -q '^export CF_DNS_API_TOKEN=' /root/.profile; then
-    echo "Adding CF_DNS_API_TOKEN to .profile..."
-    echo 'export CF_DNS_API_TOKEN="YOUR_CLOUDFLARE_DNS_API_TOKEN"' >> /root/.profile
+  if ! grep -q '^export CF_Token=' /root/.profile; then
+    echo "Adding CF_Token to .profile..."
+    echo 'export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"' >> /root/.profile
   fi
   if ! grep -q '^export CF_Account_ID=' /root/.profile; then
     echo "Adding CF_Account_ID to .profile..."
@@ -53,8 +49,7 @@ CA="letsencrypt"
 
 # Export environment variables
 export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
-export CF_API_EMAIL="YOUR_CLOUDFLARE_EMAIL"
-export CF_DNS_API_TOKEN="YOUR_CLOUDFLARE_DNS_API_TOKEN"
+export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"
 export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
 
 # Install ACME client if not already installed
@@ -73,8 +68,7 @@ fi
 
 # Export environment variables
 export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
-export CF_API_EMAIL="YOUR_CLOUDFLARE_EMAIL"
-export CF_DNS_API_TOKEN="YOUR_CLOUDFLARE_DNS_API_TOKEN"
+export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"
 export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
 
 # Run SSL script in the background safely

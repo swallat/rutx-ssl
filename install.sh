@@ -37,9 +37,9 @@ done
 # Function to execute commands, respecting dry-run mode
 execute() {
   if [ "$DRY_RUN" = "yes" ]; then
-    echo "DRY-RUN: $*"
+    echo "DRY-RUN: $1"
   else
-    "$@"
+    eval "$1"
   fi
 }
 

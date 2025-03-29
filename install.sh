@@ -83,7 +83,7 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
 fi
 
 # Request and import certificates
-/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA $(for DOMAIN in \$DOMAINS; do echo -n "-d \$DOMAIN "; done) \
+/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$(echo \$DOMAINS | sed 's/[^ ]* */-d &/g') \
   --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \
   --reloadcmd "/etc/init.d/uhttpd restart" --log
 EOF

@@ -63,7 +63,7 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
 fi
 
 # Request and import certificates for each domain
-/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA $(for DOMAIN in \$DOMAINS; do echo -n "-d \$DOMAIN "; done) \
+/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$(echo \$DOMAINS | sed 's/[^ ]* */-d &/g') \
   --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \
   --reloadcmd "/etc/init.d/uhttpd restart" --log
 EOF
@@ -82,3 +82,4 @@ echo "Running ssl.sh script in the background..."
 /root/ssl.sh >/dev/null 2>&1 &
 
 exit 0
+

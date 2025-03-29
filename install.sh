@@ -96,14 +96,14 @@ if [ "$ACTION" = "install" ]; then
     1)
       SERVICE="dns_hetzner"
       echo "Please enter your HETZNER_Token:"
-      read -r HETZNER_TOKEN
+      read -r HETZNER_Token
       ;;
     2)
       SERVICE="dns_cf"
       echo "Please enter your Cloudflare_Token:"
-      read -r CF_TOKEN
+      read -r CF_Token
       echo "Please enter your Cloudflare_Account_ID:"
-      read -r CF_ACCOUNT_ID
+      read -r CF_Account_ID
       ;;
     *)
       echo "Invalid option $opt"

@@ -1,176 +1,388 @@
 #!/bin/sh
+# ---------- Constants ----------
+SCRIPT_NAME="ssl-setup.sh"
+VERSION="1.0.0"
+BACKUP_DIR="/root/ssl-backup"
+LOG_FILE="/var/log/ssl-setup.log"
+SSL_CERT_PATH="/etc/uhttpd.crt"
+SSL_KEY_PATH="/etc/uhttpd.key"
+REPO_URL="https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh"
+SCRIPT_PATH="/usr/local/bin/ssl-setup.sh"  # Fester Installationspfad für das Skript
+REQUIRED_TOOLS="curl sed grep tr"
 
-# Default values
+# ---------- Default values ----------
 ACTION="install"
-TEST_INSTALL="no"
 DRY_RUN="no"
+VERBOSE="no"
 
-# Parse command line arguments
-while [ "$#" -gt 0 ]; do
-  case "$1" in
-    help)
-      ACTION="help"
-      ;;
-    install)
-      ACTION="install"
-      ;;
-    uninstall)
-      ACTION="uninstall"
-      ;;
-    update)
-      ACTION="update"
-      ;;
-    -t|--test)
-      TEST_INSTALL="yes"
-      ;;
-    -d|--dry-run)
-      DRY_RUN="yes"
-      ;;
-    *)
-      echo "Unknown option: $1"
-      exit 1
-      ;;
-  esac
-  shift
-done
-
-# Function to execute commands, respecting dry-run mode
-execute() {
-  if [ "$DRY_RUN" = "yes" ]; then
-    echo "DRY-RUN: $1"
-  else
-    eval "$1"
-  fi
+# ---------- Helper functions ----------
+log() {
+    local level="$1"
+    shift
+    local message="$*"
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "[$timestamp] [$level] $message" | tee -a "$LOG_FILE"
 }
 
-# Help option
-if [ "$ACTION" = "help" ]; then
-  echo "Usage: sh install.sh [option] [flags]"
-  echo "Options:"
-  echo "  help       Display this help message"
-  echo "  install    Install the SSL setup (default)"
-  echo "  uninstall  Uninstall the SSL setup"
-  echo "  update     Update the SSL setup script to the latest version"
-  echo "Flags:"
-  echo "  -t, --test     Perform a test installation"
-  echo "  -d, --dry-run  Show commands without executing them"
-  exit 0
-fi
+error_exit() {
+    log "ERROR" "$1"
+    exit 1
+}
 
-# Uninstall option
-if [ "$ACTION" = "uninstall" ]; then
-  echo "Uninstalling SSL setup..."
-  execute "rm -f /root/ssl.sh"
-  execute "sed -i '/export HETZNER_Token/d' /root/.profile"
-  execute "sed -i '/export CF_Token/d' /root/.profile"
-  execute "sed -i '/export CF_Account_ID/d' /root/.profile"
-  echo "Uninstallation completed."
-  exit 0
-fi
-
-# Update option
-if [ "$ACTION" = "update" ]; then
-  echo "Updating SSL setup script..."
-  execute "curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh"
-  echo "Update completed. Please run the script again without the update option."
-  exit 0
-fi
-
-# Installation process
-if [ "$ACTION" = "install" ]; then
-  # User prompts for domains, email address, certificate authority, and DNS service
-  echo "Please enter your domains (separated by commas):"
-  read -r DOMAINS
-  echo "Please enter your email address:"
-  read -r MAIL
-  echo "Please enter the certificate authority (e.g., letsencrypt):"
-  read -r CA
-
-  # DNS service selection
-  echo "Please select your DNS service:"
-  echo "1) Hetzner"
-  echo "2) Cloudflare"
-  read -r opt
-  case $opt in
-    1)
-      SERVICE="dns_hetzner"
-      echo "Please enter your HETZNER_Token:"
-      read -r HETZNER_Token
-      ;;
-    2)
-      SERVICE="dns_cf"
-      echo "Please enter your Cloudflare_Token:"
-      read -r CF_Token
-      echo "Please enter your Cloudflare_Account_ID:"
-      read -r CF_Account_ID
-      ;;
-    *)
-      echo "Invalid option $opt"
-      exit 1
-      ;;
-  esac
-
-  # Format domains correctly for acme.sh
-  FORMATTED_DOMAINS=$(echo "$DOMAINS" | tr ',' ' ' | sed 's/[^ ]* */-d & /g')
-
-  # SSL script creation
-  echo "Creating ssl.sh script..."
-  execute "cat > ./ssl.sh << 'EOF'
-#!/bin/sh
-
-# Domains and email configuration
-DOMAINS=\"$FORMATTED_DOMAINS\"
-MAIL=\"$MAIL\"
-
-# DNS service for ACME
-SERVICE=\"$SERVICE\"
-SERVICE_TOKEN=\"HETZNER_Token\"
-if [ \"\$SERVICE\" = \"dns_cf\" ]; then
-  SERVICE_TOKEN=\"CF_Token\"
-fi
-
-# Certificate authority
-CA=\"$CA\"
-
-# Export environment variables
-export HETZNER_Token=\"$HETZNER_Token\"
-export CF_Token=\"$CF_Token\"
-export CF_Account_ID=\"$CF_Account_ID\"
-
-# Install ACME client if not already installed
-if [ ! -f /root/.acme.sh/acme.sh ]; then
-  curl -s https://get.acme.sh | sh -s email=\$MAIL
-fi
-
-# Request and import certificates
-/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$DOMAINS \\
-  --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \\
-  --reloadcmd \"/etc/init.d/uhttpd restart\" --log
-EOF"
-
-  execute "chmod a+x ./ssl.sh"
-
-  if [ "$TEST_INSTALL" != "yes" ]; then
-    # Add environment variables to profile for persistent access
-    echo "Adding environment variables to .profile..."
-    if [ "$SERVICE" = "dns_hetzner" ]; then
-      execute "grep -q 'HETZNER_Token' /root/.profile || echo 'export HETZNER_Token=\"$HETZNER_Token\"' >> /root/.profile"
+execute() {
+    if [ "$DRY_RUN" = "yes" ]; then
+        log "DRY-RUN" "$1"
     else
-      execute "grep -q 'CF_Token' /root/.profile || echo 'export CF_Token=\"$CF_Token\"' >> /root/.profile"
-      execute "grep -q 'CF_Account_ID' /root/.profile || echo 'export CF_Account_ID=\"$CF_Account_ID\"' >> /root/.profile"
+        if [ "$VERBOSE" = "yes" ]; then
+            log "EXECUTE" "$1"
+        fi
+        eval "$1"
+    fi
+}
+
+# ---------- Validation functions ----------
+check_requirements() {
+    for cmd in $REQUIRED_TOOLS; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            error_exit "Required command '$cmd' not found"
+        fi
+    done
+}
+
+validate_email() {
+    if ! echo "$1" | grep -E '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' >/dev/null; then
+        return 1
+    fi
+    return 0
+}
+
+validate_domains() {
+    local domains="$1"
+    for domain in $(echo "$domains" | tr ',' ' '); do
+        if ! echo "$domain" | grep -E '^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' >/dev/null; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+backup_certs() {
+    local backup_dir="${BACKUP_DIR}/$(date +%Y%m%d_%H%M%S)"
+    if [ -f "$SSL_CERT_PATH" ] || [ -f "$SSL_KEY_PATH" ]; then
+        log "INFO" "Creating backup of existing certificates"
+        execute "mkdir -p $backup_dir"
+        execute "cp -f /etc/uhttpd.* $backup_dir/ 2>/dev/null || true"
+    fi
+}
+
+format_domains() {
+    echo "$1" | tr ',' ' ' | sed 's/[^ ]* */-d & /g'
+}
+
+# Read password without echoing
+read_secure_token() {
+    local prompt="$1"
+    local var_name="$2"
+    local token=""
+
+    # Use stty to disable echo, read the token, then restore echo
+    echo "$prompt"
+    stty -echo
+    read -r token
+    stty echo
+    echo "" # Add a newline since read doesn't add one with echo disabled
+
+    # Set the variable using eval (be careful with this!)
+    eval "$var_name=\"$token\""
+}
+
+# ---------- Action functions ----------
+show_help() {
+    cat << EOF
+Usage: $SCRIPT_NAME [Action] [Flags]
+
+Actions:
+  help       Shows this help message
+  install    Installs the SSL setup (default)
+  update     Updates the SSL setup script to the latest version
+  uninstall  Removes acme.sh and restores original certificates
+
+Flags:
+  -d, --dry-run  Show commands without executing them
+  -v, --verbose  Enable verbose output
+
+Version: $VERSION
+EOF
+}
+
+update_setup() {
+    log "INFO" "Updating SSL setup script..."
+
+    # Erstelle temporäre Datei für das aktualisierte Skript
+    local temp_file=$(mktemp)
+
+    log "INFO" "Downloading latest version from repository..."
+    execute "curl -s -o $temp_file $REPO_URL"
+
+    if [ "$DRY_RUN" != "yes" ]; then
+        # Prüfe, ob Download erfolgreich war
+        if [ ! -s "$temp_file" ]; then
+            rm -f "$temp_file"
+            error_exit "Failed to download update from $REPO_URL"
+        fi
+
+        # Mache das Skript ausführbar und kopiere es an den finalen Ort
+        chmod +x "$temp_file"
+        cp "$temp_file" "$SCRIPT_PATH"
+        rm -f "$temp_file"
+
+        log "INFO" "Update completed successfully to version $(grep "^VERSION=" "$SCRIPT_PATH" | cut -d'"' -f2)"
+        log "INFO" "The script is now installed at $SCRIPT_PATH"
+    else
+        log "DRY-RUN" "Would update script to $SCRIPT_PATH"
+        rm -f "$temp_file"
+    fi
+}
+
+install_script() {
+    # Installiere das Skript an einem festen Ort im System
+    if [ "$0" != "$SCRIPT_PATH" ]; then
+        log "INFO" "Installing script to system path..."
+        execute "cp \"$0\" \"$SCRIPT_PATH\""
+        execute "chmod +x \"$SCRIPT_PATH\""
+
+        if [ "$DRY_RUN" != "yes" ]; then
+            log "INFO" "Script installed at $SCRIPT_PATH"
+            log "INFO" "You can now run it using: $SCRIPT_PATH [options]"
+        fi
+    fi
+}
+
+uninstall_setup() {
+    log "INFO" "Starting uninstallation process..."
+
+    # Check if acme.sh is installed
+    if [ -f /root/.acme.sh/acme.sh ]; then
+        log "INFO" "Uninstalling acme.sh..."
+        execute "/root/.acme.sh/acme.sh --uninstall"
+        execute "rm -rf /root/.acme.sh"
+    else
+        log "INFO" "acme.sh is not installed, skipping uninstall step"
     fi
 
-    # Copy SSL script to root directory
-    echo "Copying SSL script to /root/..."
-    execute "cp ./ssl.sh /root/ssl.sh"
+    # Find the earliest backup (original certificates)
+    local earliest_backup
+    if [ -d "$BACKUP_DIR" ]; then
+        earliest_backup=$(find "$BACKUP_DIR" -type d -name "20*" | sort | head -n 1)
+    fi
 
-    # Execute the script for immediate certificate generation
-    echo "Executing SSL script..."
-    execute "/root/ssl.sh"
-  else
-    echo "Test installation completed. Use --dry-run to see what commands would be executed."
-  fi
+    # Restore original certificates if a backup exists
+    if [ -n "$earliest_backup" ] && [ -d "$earliest_backup" ]; then
+        log "INFO" "Restoring original certificates from $earliest_backup"
+        if [ -f "$earliest_backup/uhttpd.crt" ]; then
+            execute "cp -f $earliest_backup/uhttpd.crt $SSL_CERT_PATH"
+        fi
+        if [ -f "$earliest_backup/uhttpd.key" ]; then
+            execute "cp -f $earliest_backup/uhttpd.key $SSL_KEY_PATH"
+        fi
+        execute "/etc/init.d/uhttpd restart"
+    else
+        log "WARN" "No certificate backups found. Cannot restore original certificates."
+    fi
 
-  echo "Installation completed successfully."
-  exit 0
-fi
+    # Entferne das Skript selbst
+    if [ -f "$SCRIPT_PATH" ]; then
+        log "INFO" "Removing script from system..."
+        execute "rm -f \"$SCRIPT_PATH\""
+    fi
+
+    if [ "$DRY_RUN" != "yes" ]; then
+        log "INFO" "Uninstallation completed."
+        echo ""
+        echo "===================== Uninstall Complete ====================="
+        echo "acme.sh has been removed from your system."
+        if [ -n "$earliest_backup" ] && [ -d "$earliest_backup" ]; then
+            echo "Original certificates have been restored."
+        else
+            echo "Note: Original certificates could not be restored (no backup found)."
+        fi
+        echo "The SSL setup script has been removed."
+        echo "================================================================"
+    else
+        log "DRY-RUN" "Uninstall simulation completed. No changes were made."
+    fi
+}
+
+# ---------- Main installation function ----------
+setup_ssl() {
+    log "INFO" "Starting SSL setup..."
+    check_requirements
+
+    # Install script to system path first
+    install_script
+
+    # Collect domain information
+    local valid_domains=0
+    while [ $valid_domains -eq 0 ]; do
+        echo "Please enter your domains (separated by commas):"
+        read -r DOMAINS
+        if validate_domains "$DOMAINS"; then
+            valid_domains=1
+        else
+            log "WARN" "Invalid domain name found. Please try again."
+        fi
+    done
+
+    # Collect email information
+    local valid_email=0
+    while [ $valid_email -eq 0 ]; do
+        echo "Please enter your email address:"
+        read -r MAIL
+        if validate_email "$MAIL"; then
+            valid_email=1
+        else
+            log "WARN" "Invalid email address. Please try again."
+        fi
+    done
+
+    # Certificate Authority selection
+    echo "Please select certificate authority:"
+    echo "1) Let's Encrypt (letsencrypt)"
+    echo "2) ZeroSSL (zerossl)"
+    read -r ca_opt
+    case $ca_opt in
+        1) CA="letsencrypt" ;;
+        2) CA="zerossl" ;;
+        *) CA="letsencrypt"; log "INFO" "Using default: Let's Encrypt" ;;
+    esac
+
+    # DNS service selection with secure token reading
+    echo "Please select your DNS service:"
+    echo "1) Hetzner"
+    echo "2) Cloudflare"
+    read -r opt
+    case $opt in
+        1)
+            SERVICE="dns_hetzner"
+            read_secure_token "Please enter your HETZNER_Token (input will be hidden):" HETZNER_Token
+            [ -z "$HETZNER_Token" ] && error_exit "HETZNER_Token cannot be empty"
+            export HETZNER_Token
+            ;;
+        2)
+            SERVICE="dns_cf"
+            read_secure_token "Please enter your Cloudflare_Token (input will be hidden):" CF_Token
+            [ -z "$CF_Token" ] && error_exit "CF_Token cannot be empty"
+            echo "Please enter your Cloudflare_Account_ID:"
+            read -r CF_Account_ID
+            [ -z "$CF_Account_ID" ] && error_exit "CF_Account_ID cannot be empty"
+            export CF_Token
+            export CF_Account_ID
+            ;;
+        *)
+            error_exit "Invalid option $opt"
+            ;;
+    esac
+
+    # Backup existing certificates
+    backup_certs
+
+    # Format domains for acme.sh
+    local formatted_domains=$(format_domains "$DOMAINS")
+
+    # Install acme.sh if not already installed
+    if [ ! -f /root/.acme.sh/acme.sh ]; then
+        log "INFO" "Installing acme.sh client..."
+        execute "curl -s https://get.acme.sh | sh -s email=\"$MAIL\""
+        if [ "$DRY_RUN" != "yes" ] && [ ! -f /root/.acme.sh/acme.sh ]; then
+            error_exit "Failed to install acme.sh"
+        fi
+    else
+        log "INFO" "acme.sh is already installed"
+    fi
+
+    # Request certificates
+    log "INFO" "Requesting SSL certificates from $CA using $SERVICE..."
+    execute "/root/.acme.sh/acme.sh --force --issue --dns \"$SERVICE\" --server \"$CA\" $formatted_domains \
+      --fullchainpath \"$SSL_CERT_PATH\" --keypath \"$SSL_KEY_PATH\" \
+      --reloadcmd \"/etc/init.d/uhttpd restart\" --log"
+
+    if [ "$DRY_RUN" != "yes" ]; then
+        log "INFO" "SSL setup completed successfully!"
+        log "INFO" "Certificates will be automatically renewed by acme.sh's cronjob"
+        echo ""
+        echo "===================== Setup Complete ====================="
+        echo "Your SSL certificates have been installed at:"
+        echo "  - Certificate: $SSL_CERT_PATH"
+        echo "  - Private Key: $SSL_KEY_PATH"
+        echo ""
+        echo "The web server has been restarted with the new certificates."
+        echo "Automatic renewal is handled by acme.sh's cronjob."
+        echo "The SSL setup script is installed at $SCRIPT_PATH"
+        echo "=========================================================="
+    else
+        log "DRY-RUN" "SSL setup simulation completed. No changes were made."
+    fi
+}
+
+# ---------- Main ----------
+# Parse command-line arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
+        help)
+            ACTION="help"
+            shift
+            ;;
+        install)
+            ACTION="install"
+            shift
+            ;;
+        update)
+            ACTION="update"
+            shift
+            ;;
+        uninstall)
+            ACTION="uninstall"
+            shift
+            ;;
+        -d|--dry-run)
+            DRY_RUN="yes"
+            shift
+            ;;
+        -v|--verbose)
+            VERBOSE="yes"
+            shift
+            ;;
+        *)
+            error_exit "Unknown option '$1'. Run '$SCRIPT_NAME help' for usage information."
+            ;;
+    esac
+done
+
+# Display banner
+cat << EOF
+========================================================
+      SSL Setup Script v$VERSION
+      Auto-configures SSL certificates using acme.sh
+========================================================
+EOF
+
+# Execute selected action
+case "$ACTION" in
+    help)
+        show_help
+        ;;
+    install)
+        setup_ssl
+        ;;
+    update)
+        update_setup
+        ;;
+    uninstall)
+        uninstall_setup
+        ;;
+    *)
+        error_exit "Unknown action '$ACTION'"
+        ;;
+esac
+
+exit 0

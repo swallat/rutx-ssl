@@ -1,20 +1,47 @@
 # Put your custom commands here that should be executed once
 # the system init finished. By default this file does nothing.
 
-# Ensure .profile exists and contains Token
+# Ensure .profile exists and contains Tokens
+echo "Checking if .profile exists and contains necessary tokens..."
 if [ ! -f /root/.profile ]; then
-  echo 'export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"' > /root/.profile
-elif ! grep -q '^export HETZNER_Token=' /root/.profile; then
-  echo 'export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"' >> /root/.profile
+  echo "Creating .profile..."
+  touch /root/.profile
+fi
+
+# Add HETZNER_Token if Hetzner is selected
+if [ "$SERVICE" = "dns_hetzner" ]; then
+  if ! grep -q '^export HETZNER_Token=' /root/.profile; then
+    echo "Adding HETZNER_Token to .profile..."
+    echo 'export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"' >> /root/.profile
+  fi
+fi
+
+# Add CF_API_EMAIL, CF_DNS_API_TOKEN, and CF_Account_ID if Cloudflare is selected
+if [ "$SERVICE" = "dns_cf" ]; then
+  if ! grep -q '^export CF_API_EMAIL=' /root/.profile; then
+    echo "Adding CF_API_EMAIL to .profile..."
+    echo 'export CF_API_EMAIL="YOUR_CLOUDFLARE_EMAIL"' >> /root/.profile
+  fi
+  if ! grep -q '^export CF_DNS_API_TOKEN=' /root/.profile; then
+    echo "Adding CF_DNS_API_TOKEN to .profile..."
+    echo 'export CF_DNS_API_TOKEN="YOUR_CLOUDFLARE_DNS_API_TOKEN"' >> /root/.profile
+  fi
+  if ! grep -q '^export CF_Account_ID=' /root/.profile; then
+    echo "Adding CF_Account_ID to .profile..."
+    echo 'export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"' >> /root/.profile
+  fi
 fi
 
 # SSL script creation
+echo "Checking if ssl.sh script exists..."
 if [ ! -f /root/ssl.sh ]; then
-cat > /root/ssl.sh << EOF
+  echo "Creating ssl.sh script..."
+  cat > /root/ssl.sh << EOF
 #!/bin/sh
 
-# Domain and email configuration
-DOMAIN="ANY.DOMAIN.COM"
+# Domains and email configuration
+# Wildcard domains are supported, e.g., *.example.com
+DOMAINS="ANY.DOMAIN.COM ANOTHER.DOMAIN.COM"
 MAIL="YOURMAIL@ANY.DOMAIN.COM"
 
 # DNS service for ACME
@@ -29,16 +56,20 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
   curl -s https://get.acme.sh | sh -s email=\$MAIL
 fi
 
-# Request and import certificate
-/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA -d \$DOMAIN \
-  --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \
-  --reloadcmd "/etc/init.d/uhttpd restart" --log
+# Request and import certificates for each domain
+for DOMAIN in \$DOMAINS; do
+  /root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA -d \$DOMAIN \
+    --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \
+    --reloadcmd "/etc/init.d/uhttpd restart" --log
+done
 EOF
 
-chmod a+x /root/ssl.sh
+  chmod a+x /root/ssl.sh
 fi
 
 # Run SSL script in the background safely
+echo "Running ssl.sh script in the background..."
 /root/ssl.sh >/dev/null 2>&1 &
 
 exit 0
+

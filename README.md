@@ -5,6 +5,16 @@ Script to use ACME.sh on Teltonika (OpenWRT) devices to get valid ssl certificat
 
 Place this script in **Custom Scripts** within the Teltonika GUI (`/etc/rc.local`).
 
+## Supported DNS Services
+
+- Hetzner
+- Cloudflare
+
+## Supported Features
+
+- Multiple Domains
+- Wildcard Domains (e.g., `*.example.com`)
+
 ## Tested Devices
 
 | Device  | Firmware Version          |
@@ -14,4 +24,8 @@ Place this script in **Custom Scripts** within the Teltonika GUI (`/etc/rc.local
 
 ## Changelog
 
-- **Check for acme client befor download**.
+- **Check for acme client before download**.
+- **Added support for Cloudflare DNS service**.
+- **Support for multiple domains**.
+- **Support for wildcard domains**.
+- **Added support for Cloudflare Account ID**.

@@ -1,88 +1,83 @@
 # Put your custom commands here that should be executed once
 # the system init finished. By default this file does nothing.
 
-# Ensure .profile exists and contains Tokens
-echo "Checking if .profile exists and contains necessary tokens..."
-if [ ! -f /root/.profile ]; then
-  echo "Creating .profile..."
-  touch /root/.profile
-fi
-
-# Add HETZNER_Token if Hetzner is selected
-if [ "$SERVICE" = "dns_hetzner" ]; then
-  if ! grep -q '^export HETZNER_Token=' /root/.profile; then
-    echo "Adding HETZNER_Token to .profile..."
-    echo 'export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"' >> /root/.profile
-  fi
-fi
-
-# Add CF_Token and CF_Account_ID if Cloudflare is selected
-if [ "$SERVICE" = "dns_cf" ]; then
-  if ! grep -q '^export CF_Token=' /root/.profile; then
-    echo "Adding CF_Token to .profile..."
-    echo 'export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"' >> /root/.profile
-  fi
-  if ! grep -q '^export CF_Account_ID=' /root/.profile; then
-    echo "Adding CF_Account_ID to .profile..."
-    echo 'export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"' >> /root/.profile
-  fi
-fi
-
-# SSL script creation
-echo "Checking if ssl.sh script exists..."
-if [ ! -f /root/ssl.sh ]; then
-  echo "Creating ssl.sh script..."
-  cat > /root/ssl.sh << EOF
-#!/bin/sh
-
-# Domains and email configuration
-# Wildcard domains sind unterstützt, z.B. *.example.com
-DOMAINS="ANY.DOMAIN.COM ANOTHER.DOMAIN.COM"
+# Default values for environment variables
+HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
+CF_Token="YOUR_PRIVATE_CLOUDFLARE_TOKEN"
+CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
+DOMAINS="ANY.DOMAIN.COM,ANOTHER.DOMAIN.COM"
 MAIL="YOURMAIL@ANY.DOMAIN.COM"
 
+# Ensure .profile exists and contains Tokens
+if [ ! -f /root/.profile ]; then
+  cat > /root/.profile << EOF
+export HETZNER_Token="$HETZNER_Token"
+export CF_Token="$CF_Token"
+export CF_Account_ID="$CF_Account_ID"
+export DOMAINS="$DOMAINS"
+EOF
+else
+  if ! grep -q '^export HETZNER_Token=' /root/.profile; then
+    echo "export HETZNER_Token=\"$HETZNER_Token\"" >> /root/.profile
+  fi
+  if ! grep -q '^export CF_Token=' /root/.profile; then
+    echo "export CF_Token=\"$CF_Token\"" >> /root/.profile
+  fi
+  if ! grep -q '^export CF_Account_ID=' /root/.profile; then
+    echo "export CF_Account_ID=\"$CF_Account_ID\"" >> /root/.profile
+  fi
+  if ! grep -q '^export DOMAINS=' /root/.profile; then
+    echo "export DOMAINS=\"$DOMAINS\"" >> /root/.profile
+  fi
+fi
+
+# Source the profile to make variables available
+. /root/.profile
+
+# SSL script creation
+if [ ! -f /root/ssl.sh ]; then
+cat > /root/ssl.sh << EOF
+#!/bin/sh
+
+# Email configuration
+MAIL=\${MAIL}
+DOMAINS=\${DOMAINS}
+
 # DNS service for ACME
-SERVICE="dns_hetzner"
-SERVICE_TOKEN="HETZNER_Token"
+if [ "\$1" = "cloudflare" ]; then
+  SERVICE="dns_cf"
+  SERVICE_TOKEN="\$CF_Token"
+  SERVICE_ACCOUNT_ID="\$CF_Account_ID"
+else
+  SERVICE="dns_hetzner"
+  SERVICE_TOKEN="\$HETZNER_Token"
+fi
 
 # Default Certificate Authority
 CA="letsencrypt"
-
-# Export environment variables
-if [ "\$SERVICE" = "dns_hetzner" ]; then
-  export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
-elif [ "\$SERVICE" = "dns_cf" ]; then
-  export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"
-  export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
-fi
 
 # Install ACME client if not already installed
 if [ ! -f /root/.acme.sh/acme.sh ]; then
   curl -s https://get.acme.sh | sh -s email=\$MAIL
 fi
 
-# Format domains correctly
-DOMAINS="\$(echo \$DOMAINS | sed 's/[^ ]* */-d \"&\"/g')"
+# Construct domain arguments for multi-domain support
+IFS=',' read -r -a DOMAIN_ARRAY <<< "\$DOMAINS"
+DOMAIN_ARGS=""
+for DOMAIN in "\${DOMAIN_ARRAY[@]}"; do
+  DOMAIN_ARGS="\$DOMAIN_ARGS -d \$DOMAIN"
+done
 
-# Request and import certificates for each domain
-/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$DOMAINS \
+# Request and import certificate
+/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$DOMAIN_ARGS \
   --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \
   --reloadcmd "/etc/init.d/uhttpd restart" --log
 EOF
 
-  chmod a+x /root/ssl.sh
+chmod a+x /root/ssl.sh
 fi
 
-# Export environment variables
-if [ "$SERVICE" = "dns_hetzner" ]; then
-  export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
-elif [ "$SERVICE" = "dns_cf" ]; then
-  export CF_Token="YOUR_CLOUDFLARE_DNS_API_TOKEN"
-  export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
-fi
-
-# Run SSL script in the background safely
-echo "Running ssl.sh script in the background..."
-/root/ssl.sh >/dev/null 2>&1 &
+# Run SSL script in the background safely with default domains
+/root/ssl.sh hetzner >/dev/null 2>&1 &
 
 exit 0
-

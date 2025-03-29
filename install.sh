@@ -80,7 +80,7 @@ fi
 # Installation process
 if [ "$ACTION" = "install" ]; then
   # User prompts for domains, email address, certificate authority, and DNS service
-  echo "Please enter your domains (separated by spaces):"
+  echo "Please enter your domains (separated by commas):"
   read -r DOMAINS
   echo "Please enter your email address:"
   read -r MAIL
@@ -141,8 +141,8 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
   curl -s https://get.acme.sh | sh -s email=\$MAIL
 fi
 
-# Format domains correctly
-DOMAINS="\$(echo \$DOMAINS | sed 's/[^ ]* */-d & /g')"
+# Format domains correctly for acme.sh
+DOMAINS="\$(echo \$DOMAINS | tr ',' ' ' | sed 's/[^ ]* */-d & /g')"
 
 # Request and import certificates
 /root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$DOMAINS \
@@ -195,4 +195,3 @@ EOF"
 
   echo "Installation completed."
 fi
-

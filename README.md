@@ -10,7 +10,7 @@ Place this script in **Custom Scripts** within the Teltonika GUI (`/etc/rc.local
 You can automatically download and execute the `install.sh` script using the following command:
 
 ```sh
-curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh
+curl -s -o install_acme.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install_acme.sh
 ```
 
 ### Test Installation
@@ -18,7 +18,7 @@ curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/he
 To perform a test installation, run the following command:
 
 ```sh
-curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh --test
+curl -s -o install_acme.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install_acme.sh --test
 ```
 
 ### Uninstallation
@@ -26,7 +26,7 @@ curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/he
 To uninstall the SSL setup, run the following command:
 
 ```sh
-curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh uninstall
+curl -s -o install_acme.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install_acme.sh uninstall
 ```
 
 ## Configuration

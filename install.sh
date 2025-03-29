@@ -1,13 +1,12 @@
 #!/bin/sh
 # ---------- Constants ----------
-SCRIPT_NAME="ssl-setup.sh"
+SCRIPT_NAME="install_acme.sh"
 VERSION="1.0.0"
 BACKUP_DIR="/root/ssl-backup"
 LOG_FILE="/var/log/ssl-setup.log"
 SSL_CERT_PATH="/etc/uhttpd.crt"
 SSL_KEY_PATH="/etc/uhttpd.key"
-REPO_URL="https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh"
-SCRIPT_PATH="/usr/local/bin/ssl-setup.sh"  # Fester Installationspfad für das Skript
+#REPO_URL="https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh"
 REQUIRED_TOOLS="curl sed grep tr"
 
 # ---------- Default values ----------
@@ -104,7 +103,6 @@ Usage: $SCRIPT_NAME [Action] [Flags]
 Actions:
   help       Shows this help message
   install    Installs the SSL setup (default)
-  update     Updates the SSL setup script to the latest version
   uninstall  Removes acme.sh and restores original certificates
 
 Flags:
@@ -113,49 +111,6 @@ Flags:
 
 Version: $VERSION
 EOF
-}
-
-update_setup() {
-    log "INFO" "Updating SSL setup script..."
-
-    # Erstelle temporäre Datei für das aktualisierte Skript
-    local temp_file=$(mktemp)
-
-    log "INFO" "Downloading latest version from repository..."
-    execute "curl -s -o $temp_file $REPO_URL"
-
-    if [ "$DRY_RUN" != "yes" ]; then
-        # Prüfe, ob Download erfolgreich war
-        if [ ! -s "$temp_file" ]; then
-            rm -f "$temp_file"
-            error_exit "Failed to download update from $REPO_URL"
-        fi
-
-        # Mache das Skript ausführbar und kopiere es an den finalen Ort
-        chmod +x "$temp_file"
-        cp "$temp_file" "$SCRIPT_PATH"
-        rm -f "$temp_file"
-
-        log "INFO" "Update completed successfully to version $(grep "^VERSION=" "$SCRIPT_PATH" | cut -d'"' -f2)"
-        log "INFO" "The script is now installed at $SCRIPT_PATH"
-    else
-        log "DRY-RUN" "Would update script to $SCRIPT_PATH"
-        rm -f "$temp_file"
-    fi
-}
-
-install_script() {
-    # Installiere das Skript an einem festen Ort im System
-    if [ "$0" != "$SCRIPT_PATH" ]; then
-        log "INFO" "Installing script to system path..."
-        execute "cp \"$0\" \"$SCRIPT_PATH\""
-        execute "chmod +x \"$SCRIPT_PATH\""
-
-        if [ "$DRY_RUN" != "yes" ]; then
-            log "INFO" "Script installed at $SCRIPT_PATH"
-            log "INFO" "You can now run it using: $SCRIPT_PATH [options]"
-        fi
-    fi
 }
 
 uninstall_setup() {
@@ -190,23 +145,17 @@ uninstall_setup() {
         log "WARN" "No certificate backups found. Cannot restore original certificates."
     fi
 
-    # Entferne das Skript selbst
-    if [ -f "$SCRIPT_PATH" ]; then
-        log "INFO" "Removing script from system..."
-        execute "rm -f \"$SCRIPT_PATH\""
-    fi
-
     if [ "$DRY_RUN" != "yes" ]; then
         log "INFO" "Uninstallation completed."
         echo ""
         echo "===================== Uninstall Complete ====================="
         echo "acme.sh has been removed from your system."
+        echo "Please remove this script via: rm install.sh"
         if [ -n "$earliest_backup" ] && [ -d "$earliest_backup" ]; then
             echo "Original certificates have been restored."
         else
             echo "Note: Original certificates could not be restored (no backup found)."
         fi
-        echo "The SSL setup script has been removed."
         echo "================================================================"
     else
         log "DRY-RUN" "Uninstall simulation completed. No changes were made."
@@ -217,9 +166,6 @@ uninstall_setup() {
 setup_ssl() {
     log "INFO" "Starting SSL setup..."
     check_requirements
-
-    # Install script to system path first
-    install_script
 
     # Collect domain information
     local valid_domains=0
@@ -317,7 +263,6 @@ setup_ssl() {
         echo ""
         echo "The web server has been restarted with the new certificates."
         echo "Automatic renewal is handled by acme.sh's cronjob."
-        echo "The SSL setup script is installed at $SCRIPT_PATH"
         echo "=========================================================="
     else
         log "DRY-RUN" "SSL setup simulation completed. No changes were made."
@@ -334,10 +279,6 @@ while [ $# -gt 0 ]; do
             ;;
         install)
             ACTION="install"
-            shift
-            ;;
-        update)
-            ACTION="update"
             shift
             ;;
         uninstall)
@@ -373,9 +314,6 @@ case "$ACTION" in
         ;;
     install)
         setup_ssl
-        ;;
-    update)
-        update_setup
         ;;
     uninstall)
         uninstall_setup

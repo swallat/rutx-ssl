@@ -83,11 +83,9 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
 fi
 
 # Request and import certificates
-for DOMAIN in \$DOMAINS; do
-  /root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA -d \$DOMAIN \
-    --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \
-    --reloadcmd "/etc/init.d/uhttpd restart" --log
-done
+/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA $(for DOMAIN in \$DOMAINS; do echo -n "-d \$DOMAIN "; done) \
+  --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \
+  --reloadcmd "/etc/init.d/uhttpd restart" --log
 EOF
 
 chmod a+x ./ssl.sh

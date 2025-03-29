@@ -142,7 +142,7 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
 fi
 
 # Format domains correctly
-DOMAINS=\$(echo \$DOMAINS | sed 's/[^ ]* */-d \"&\"/g')
+DOMAINS="\$(echo \$DOMAINS | sed 's/[^ ]* */-d & /g')"
 
 # Request and import certificates
 /root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$DOMAINS \

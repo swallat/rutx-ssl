@@ -51,6 +51,12 @@ SERVICE_TOKEN="HETZNER_Token"
 # Default Certificate Authority
 CA="letsencrypt"
 
+# Export environment variables
+export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
+export CF_API_EMAIL="YOUR_CLOUDFLARE_EMAIL"
+export CF_DNS_API_TOKEN="YOUR_CLOUDFLARE_DNS_API_TOKEN"
+export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
+
 # Install ACME client if not already installed
 if [ ! -f /root/.acme.sh/acme.sh ]; then
   curl -s https://get.acme.sh | sh -s email=\$MAIL

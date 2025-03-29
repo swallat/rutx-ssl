@@ -13,6 +13,14 @@ You can automatically download and execute the `install.sh` script using the fol
 curl -s https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh | sh
 ```
 
+### Uninstallation
+
+To uninstall the SSL setup, run the following command:
+
+```sh
+curl -s https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh | sh -s uninstall
+```
+
 ## Supported DNS Services
 
 - Hetzner
@@ -37,4 +45,4 @@ curl -s https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/insta
 - **Support for multiple domains**.
 - **Support for wildcard domains**.
 - **Added support for Cloudflare Account ID**.
-
+- **Added uninstall option**.

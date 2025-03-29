@@ -113,11 +113,10 @@ if [ "$ACTION" = "install" ]; then
 
   # SSL script creation
   echo "Creating ssl.sh script..."
-  execute "cat > ./ssl.sh << EOF
+  execute "cat > ./ssl.sh << 'EOF'
 #!/bin/sh
 
 # Domains and email configuration
-# Wildcard domains sind unterstützt, z.B. *.example.com
 DOMAINS=\"$DOMAINS\"
 MAIL=\"$MAIL\"
 

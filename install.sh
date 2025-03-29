@@ -65,7 +65,7 @@ MAIL="$MAIL"
 SERVICE="$SERVICE"
 SERVICE_TOKEN="HETZNER_Token"
 if [ "\$SERVICE" = "dns_cf" ]; then
-  SERVICE_TOKEN="CF_Token"
+  SERVICE_TOKEN="CF_DNS_API_TOKEN"
 fi
 
 # Certificate authority

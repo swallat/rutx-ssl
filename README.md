@@ -10,7 +10,7 @@ Place this script in **Custom Scripts** within the Teltonika GUI (`/etc/rc.local
 You can automatically download and execute the `install.sh` script using the following command:
 
 ```sh
-curl -s https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh | sh
+curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh
 ```
 
 ### Uninstallation
@@ -18,7 +18,7 @@ curl -s https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/insta
 To uninstall the SSL setup, run the following command:
 
 ```sh
-curl -s https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh | sh -s uninstall
+curl -s -o install.sh https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh && sh install.sh uninstall
 ```
 
 ## Supported DNS Services
@@ -46,3 +46,4 @@ curl -s https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/insta
 - **Support for wildcard domains**.
 - **Added support for Cloudflare Account ID**.
 - **Added uninstall option**.
+

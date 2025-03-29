@@ -73,6 +73,12 @@ EOF
   chmod a+x /root/ssl.sh
 fi
 
+# Export environment variables
+export HETZNER_Token="YOUR_PRIVATE_HETZNER_TOKEN"
+export CF_API_EMAIL="YOUR_CLOUDFLARE_EMAIL"
+export CF_DNS_API_TOKEN="YOUR_CLOUDFLARE_DNS_API_TOKEN"
+export CF_Account_ID="YOUR_CLOUDFLARE_ACCOUNT_ID"
+
 # Run SSL script in the background safely
 echo "Running ssl.sh script in the background..."
 /root/ssl.sh >/dev/null 2>&1 &

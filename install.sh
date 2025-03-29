@@ -15,35 +15,35 @@ fi
 
 # Test installation option
 echo "Do you want to perform a test installation? (yes/no):"
-read TEST_INSTALL
+read -r TEST_INSTALL
 
 # User prompts for domains, email address, certificate authority, and DNS service
 echo "Please enter your domains (separated by spaces):"
-read DOMAINS
+read -r DOMAINS
 echo "Please enter your email address:"
-read MAIL
+read -r MAIL
 echo "Please enter the certificate authority (e.g., letsencrypt):"
-read CA
+read -r CA
 
 # DNS service selection
 echo "Please select your DNS service:"
 echo "1) Hetzner"
 echo "2) Cloudflare"
-read opt
+read -r opt
 case $opt in
   1)
     SERVICE="dns_hetzner"
     echo "Please enter your HETZNER_Token:"
-    read HETZNER_TOKEN
+    read -r HETZNER_TOKEN
     ;;
   2)
     SERVICE="dns_cf"
     echo "Please enter your Cloudflare_Token:"
-    read CF_TOKEN
+    read -r CF_TOKEN
     echo "Please enter your Cloudflare_Account_ID:"
-    read CF_ACCOUNT_ID
+    read -r CF_ACCOUNT_ID
     echo "Please enter your Cloudflare_API_Email:"
-    read CF_API_EMAIL
+    read -r CF_API_EMAIL
     ;;
   *)
     echo "Invalid option $opt"
@@ -132,3 +132,4 @@ if [ "$TEST_INSTALL" != "yes" ]; then
 fi
 
 echo "Installation completed."
+

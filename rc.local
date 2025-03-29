@@ -36,7 +36,7 @@ if [ ! -f /root/ssl.sh ]; then
 #!/bin/sh
 
 # Domains and email configuration
-# Wildcard domains are supported, e.g., *.example.com
+# Wildcard domains sind unterstützt, z.B. *.example.com
 DOMAINS="ANY.DOMAIN.COM ANOTHER.DOMAIN.COM"
 MAIL="YOURMAIL@ANY.DOMAIN.COM"
 
@@ -60,8 +60,11 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
   curl -s https://get.acme.sh | sh -s email=\$MAIL
 fi
 
+# Format domains correctly
+DOMAINS="\$(echo \$DOMAINS | sed 's/[^ ]* */-d \"&\"/g')"
+
 # Request and import certificates for each domain
-/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$(echo \$DOMAINS | sed 's/[^ ]* */-d &/g') \
+/root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$DOMAINS \
   --fullchainpath /etc/uhttpd.crt --keypath /etc/uhttpd.key \
   --reloadcmd "/etc/init.d/uhttpd restart" --log
 EOF

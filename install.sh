@@ -117,7 +117,7 @@ if [ "$ACTION" = "install" ]; then
 #!/bin/sh
 
 # Domains and email configuration
-# Wildcard domains are supported, e.g., *.example.com
+# Wildcard domains sind unterstützt, z.B. *.example.com
 DOMAINS=\"$DOMAINS\"
 MAIL=\"$MAIL\"
 
@@ -142,7 +142,7 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
 fi
 
 # Format domains correctly
-DOMAINS=\$(echo \$DOMAINS | sed 's/[^ ]* */-d &/g')
+DOMAINS=\$(echo \$DOMAINS | sed 's/[^ ]* */-d \"&\"/g')
 
 # Request and import certificates
 /root/.acme.sh/acme.sh --force --issue --dns \$SERVICE --server \$CA \$DOMAINS \
@@ -195,3 +195,4 @@ EOF"
 
   echo "Installation completed."
 fi
+

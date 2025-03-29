@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # User prompts for domains, email address, certificate authority, and DNS service
 read -p "Please enter your domains (separated by spaces): " DOMAINS
@@ -31,7 +31,7 @@ done
 # SSL script creation
 echo "Creating ssl.sh script..."
 cat > /root/ssl.sh << EOF
-#!/bin/sh
+#!/bin/bash
 
 # Domains and email configuration
 # Wildcard domains are supported, e.g., *.example.com
@@ -97,4 +97,3 @@ if [ "$SERVICE" = "dns_cf" ]; then
 fi
 
 echo "Installation completed."
-

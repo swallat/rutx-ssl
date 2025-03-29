@@ -5,6 +5,14 @@ Script to use ACME.sh on Teltonika (OpenWRT) devices to get valid ssl certificat
 
 Place this script in **Custom Scripts** within the Teltonika GUI (`/etc/rc.local`).
 
+### Automatic Installation
+
+You can automatically download and execute the `install.sh` script using the following command:
+
+```sh
+curl -s https://raw.githubusercontent.com/swallat/rutx-ssl/refs/heads/main/install.sh | sh
+```
+
 ## Supported DNS Services
 
 - Hetzner
@@ -29,3 +37,4 @@ Place this script in **Custom Scripts** within the Teltonika GUI (`/etc/rc.local
 - **Support for multiple domains**.
 - **Support for wildcard domains**.
 - **Added support for Cloudflare Account ID**.
+
